@@ -9,7 +9,7 @@ compatibility_date = "2024-12-01"
 # KV namespace for storing encrypted refresh tokens
 [[kv_namespaces]]
 binding = "AUTH_TOKENS"
-id = "your-kv-namespace-id"
+id = "7604703547d245e5ba687e51bc973c23"
 
 # For local development
 # [[kv_namespaces]]

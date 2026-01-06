@@ -29,9 +29,9 @@ const app = new Hono<{ Bindings: Env }>();
 
 // Constants
 const REDIRECT_URI = 'http://localhost:8400/callback';
-const SCOPES = 'Files.Read.All offline_access openid profile';
-const TOKEN_ENDPOINT = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/token';
-const AUTHORIZE_ENDPOINT = 'https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize';
+const SCOPES = 'Files.Read.All offline_access openid profile User.Read';
+const TOKEN_ENDPOINT = 'https://login.microsoftonline.com/common/oauth2/v2.0/token';
+const AUTHORIZE_ENDPOINT = 'https://login.microsoftonline.com/common/oauth2/v2.0/authorize';
 const USERINFO_ENDPOINT = 'https://graph.microsoft.com/v1.0/me';
 
 // KV expiration: 90 days in seconds

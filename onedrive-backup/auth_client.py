@@ -32,7 +32,7 @@ from urllib.parse import urlparse, parse_qs
 import requests
 
 # Configuration
-AUTH_SERVICE_URL = os.environ.get('AUTH_SERVICE_URL', 'https://onedrive-auth-service.your-domain.workers.dev')
+AUTH_SERVICE_URL = os.environ.get('AUTH_SERVICE_URL', 'https://onedrive-auth-service.dj-ninow.workers.dev')
 LOCAL_CALLBACK_PORT = 8400
 SESSION_FILE = Path.home() / '.onedrive_backup_session.json'
 
