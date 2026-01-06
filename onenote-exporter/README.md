@@ -1,4 +1,4 @@
-# OneNote to Evernote/Joplin Exporter
+# OneNote to Evernote/Joplin Exporter (Work In Progress)
 
 A Python tool to export your entire OneNote notebooks with all attachments (images, audio recordings, PDFs, web links, etc.) for importing into popular note-taking apps like Evernote and Joplin.
 
