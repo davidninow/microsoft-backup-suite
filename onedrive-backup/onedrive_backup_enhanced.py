@@ -3,25 +3,22 @@ import shutil
 from pathlib import Path
 from datetime import datetime
 import json
-import getpass
 import requests
-import webbrowser
-from urllib.parse import urljoin, urlparse, parse_qs
 import time
 import hashlib
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from threading import Lock
 import threading
 
+# Import SimpleAuth for hosted authentication
+from auth_client import SimpleAuth
+
 class OneDriveBackup:
-    def __init__(self):
+    def __init__(self, auth_client: SimpleAuth = None):
         self.onedrive_path = self.find_onedrive_path()
         self.backup_log = []
         self.access_token = None
-        self.refresh_token = None
-        self.client_id = None
-        self.client_secret = None
-        self.tenant_id = None
+        self._auth_client = auth_client  # SimpleAuth client for token refresh
         self.use_api = False
         self.downloaded_files = {}  # Changed to dict to store metadata
         self.progress_file = None
@@ -260,246 +257,20 @@ class OneDriveBackup:
                     }, f, indent=2)
             except Exception as e:
                 print(f"⚠️  Could not save metadata: {e}")
-    
-    def login_to_onedrive_api(self):
-        """Login to OneDrive using Microsoft Graph API"""
-        print("\n" + "="*50)
-        print("OneDrive Online Login")
-        print("="*50)
-        print("\n⚠️  IMPORTANT LIMITATIONS:")
-        print("- Personal Microsoft accounts don't support device code flow")
-        print("- You'll need to create a Microsoft App Registration")
-        print("- This requires some technical setup")
-        print("\n📋 Setup Instructions:")
-        print("1. Go to: https://portal.azure.com")
-        print("2. Search for 'App registrations' → New registration")
-        print("3. Name: 'OneDrive Backup' (any name)")
-        print("4. Supported account types: 'Personal Microsoft accounts only'")
-        print("5. Register the app")
-        print("6. Go to 'Certificates & secrets' → New client secret")
-        print("7. Copy the Client ID and Client Secret")
-        print("8. Go to 'API permissions' → Add permission → Microsoft Graph")
-        print("9. Add: Files.Read.All (Delegated)")
-        print("10. Grant admin consent")
-        print("\n⚠️  NOTE: This is complex. Alternative: Download files to local OneDrive first")
-        print("="*50 + "\n")
-        
-        choice = input("Choose login method:\n1. App Credentials (Personal Account)\n2. Device Code (Work/School Only)\n3. Skip\nEnter choice: ").strip()
-        
-        if choice == '1':
-            return self.app_credentials_auth()
-        elif choice == '2':
-            print("\n⚠️  Warning: Device code only works with work/school accounts")
-            confirm = input("Do you have a work/school account? (y/n): ").strip().lower()
-            if confirm == 'y':
-                return self.device_code_auth()
-            else:
-                print("Returning to main menu...")
-                return False
-        else:
-            return False
-    
-    def device_code_auth(self):
-        """Authenticate using device code flow (no app registration needed)"""
-        print("\n📱 Device Code Authentication")
-        print("This method is more secure and doesn't require app registration\n")
-        
-        # Using Microsoft's public client ID for device code flow
-        client_id = "d3590ed6-52b3-4102-aeff-aad2292ab01c"  # Microsoft Office client
-        authority = "https://login.microsoftonline.com/common"
-        
-        # Request device code
-        device_code_url = f"{authority}/oauth2/v2.0/devicecode"
-        data = {
-            'client_id': client_id,
-            'scope': 'https://graph.microsoft.com/Files.Read.All offline_access'
-        }
-        
-        try:
-            response = requests.post(device_code_url, data=data)
-            device_code_data = response.json()
-            
-            if 'error' in device_code_data:
-                print(f"❌ Error: {device_code_data.get('error_description', 'Unknown error')}")
-                return False
-            
-            print("\n" + "="*50)
-            print("🔐 AUTHENTICATION REQUIRED")
-            print("="*50)
-            print(f"\n1. Go to: {device_code_data['verification_uri']}")
-            print(f"2. Enter code: {device_code_data['user_code']}")
-            print(f"3. Sign in with your Microsoft account")
-            print(f"\nWaiting for authentication (expires in {device_code_data['expires_in']//60} minutes)...")
-            print("="*50 + "\n")
-            
-            # Poll for token
-            token_url = f"{authority}/oauth2/v2.0/token"
-            token_data = {
-                'client_id': client_id,
-                'grant_type': 'urn:ietf:params:oauth:grant-type:device_code',
-                'device_code': device_code_data['device_code']
-            }
-            
-            interval = device_code_data.get('interval', 5)
-            expires_at = time.time() + device_code_data['expires_in']
-            
-            while time.time() < expires_at:
-                time.sleep(interval)
-                token_response = requests.post(token_url, data=token_data)
-                token_result = token_response.json()
-                
-                if 'access_token' in token_result:
-                    self.access_token = token_result['access_token']
-                    self.use_api = True
-                    print("✅ Successfully authenticated!\n")
-                    return True
-                elif token_result.get('error') == 'authorization_pending':
-                    print("⏳ Waiting for authentication...", end='\r')
-                    continue
-                elif token_result.get('error') == 'authorization_declined':
-                    print("\n❌ Authentication declined")
-                    return False
-                elif token_result.get('error') == 'expired_token':
-                    print("\n❌ Authentication expired")
-                    return False
-                else:
-                    print(f"\n❌ Error: {token_result.get('error_description', 'Unknown error')}")
-                    return False
-            
-            print("\n⏱️  Authentication timeout")
-            return False
-            
-        except Exception as e:
-            print(f"❌ Authentication error: {e}")
-            return False
-    
-    def app_credentials_auth(self):
-        """Authenticate using app credentials (requires app registration)"""
-        print("\n🔑 App Credentials Authentication")
-        self.client_id = input("Enter Application (client) ID: ").strip()
-        self.client_secret = getpass.getpass("Enter Client Secret (hidden): ")
-        self.tenant_id = input("Enter Tenant ID (or 'common' for personal): ").strip() or "common"
-        
-        authority = f"https://login.microsoftonline.com/{self.tenant_id}"
-        
-        # For personal accounts, we need delegated permissions with auth code flow
-        if self.tenant_id == "common":
-            return self.delegated_auth_flow()
-        
-        # For work/school, use client credentials
-        token_url = f"{authority}/oauth2/v2.0/token"
-        data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'scope': 'https://graph.microsoft.com/.default',
-            'grant_type': 'client_credentials'
-        }
-        
-        try:
-            response = requests.post(token_url, data=data)
-            result = response.json()
-            
-            if 'access_token' in result:
-                self.access_token = result['access_token']
-                self.use_api = True
-                print("✅ Successfully authenticated!\n")
-                return True
-            else:
-                print(f"❌ Authentication failed: {result.get('error_description', 'Unknown error')}")
-                return False
-        except Exception as e:
-            print(f"❌ Authentication error: {e}")
-            return False
-    
-    def delegated_auth_flow(self):
-        """Interactive auth flow for personal accounts"""
-        print("\n🔐 Starting interactive authentication...")
-        print("A browser window will open for you to sign in.")
-        
-        # Generate auth URL
-        redirect_uri = "http://localhost:8080"
-        scope = "Files.Read.All offline_access"
-        auth_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/authorize"
-        auth_url += f"?client_id={self.client_id}"
-        auth_url += f"&response_type=code"
-        auth_url += f"&redirect_uri={redirect_uri}"
-        auth_url += f"&scope={scope}"
-        
-        print(f"\n1. Opening browser...")
-        print(f"2. Sign in with your Microsoft account")
-        print(f"3. After approving, you'll be redirected to localhost")
-        print(f"4. Copy the 'code=' value from the URL\n")
-        
-        webbrowser.open(auth_url)
-        
-        print("After signing in, your browser will show an error page.")
-        print("That's normal! Just copy the URL from your browser.")
-        redirect_response = input("\nPaste the full redirect URL here: ").strip()
-        
-        # Extract code from URL
-        try:
-            from urllib.parse import urlparse, parse_qs
-            parsed = urlparse(redirect_response)
-            code = parse_qs(parsed.query)['code'][0]
-        except:
-            print("❌ Could not extract authorization code from URL")
-            return False
-        
-        # Exchange code for tokens
-        token_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
-        data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'code': code,
-            'redirect_uri': redirect_uri,
-            'grant_type': 'authorization_code'
-        }
-        
-        try:
-            response = requests.post(token_url, data=data)
-            result = response.json()
-            
-            if 'access_token' in result:
-                self.access_token = result['access_token']
-                self.refresh_token = result.get('refresh_token')
-                self.use_api = True
-                print("✅ Successfully authenticated!\n")
-                return True
-            else:
-                print(f"❌ Token exchange failed: {result.get('error_description', 'Unknown error')}")
-                return False
-        except Exception as e:
-            print(f"❌ Authentication error: {e}")
-            return False
-    
+
     def refresh_access_token(self):
-        """Refresh the access token using refresh token"""
-        if not self.refresh_token:
+        """Refresh the access token using the auth client"""
+        if not self._auth_client:
+            print("❌ No auth client configured")
             return False
-        
+
         print("🔄 Refreshing access token...")
-        token_url = f"https://login.microsoftonline.com/{self.tenant_id}/oauth2/v2.0/token"
-        data = {
-            'client_id': self.client_id,
-            'client_secret': self.client_secret,
-            'refresh_token': self.refresh_token,
-            'grant_type': 'refresh_token'
-        }
-        
-        try:
-            response = requests.post(token_url, data=data)
-            result = response.json()
-            
-            if 'access_token' in result:
-                self.access_token = result['access_token']
-                self.refresh_token = result.get('refresh_token', self.refresh_token)
-                print("✅ Token refreshed!")
-                return True
-            else:
-                print(f"❌ Token refresh failed: {result.get('error_description', 'Unknown error')}")
-                return False
-        except Exception as e:
-            print(f"❌ Token refresh error: {e}")
+        if self._auth_client.refresh_token():
+            self.access_token = self._auth_client.access_token
+            print("✅ Token refreshed!")
+            return True
+        else:
+            print("❌ Token refresh failed")
             return False
     
     def download_large_file(self, url, destination, filename, expected_size, depth=0, item_id=None):
@@ -1414,55 +1185,65 @@ def main():
     print("OneDrive Backup Tool - Enhanced Edition")
     print("="*50)
     print("\n🚀 Features:")
+    print("  ✓ Simple 'Login with Microsoft' authentication")
     print("  ✓ Multi-threaded downloads (3x faster)")
     print("  ✓ Disk space verification")
     print("  ✓ File integrity verification")
     print("  ✓ Incremental backups (skip unchanged files)")
     print("  ✓ Resume capability")
-    
-    backup = OneDriveBackup()
-    
-    # Always give user the choice
-    if backup.onedrive_path:
-        print(f"\n✓ Local OneDrive found at: {backup.onedrive_path}")
-        print("\n⚠️  Note: Local OneDrive may contain Files On-Demand (0 KB placeholders)")
-        print("\nHow would you like to backup?")
-        print("1. Use local OneDrive folder (only backs up downloaded files)")
-        print("2. Login to OneDrive online and download all files from cloud")
-        print("3. Exit")
-        
-        choice = input("\nEnter choice (1-3): ").strip()
-        
-        if choice == '2':
-            if not backup.login_to_onedrive_api():
+
+    # Initialize authentication
+    auth = SimpleAuth()
+
+    # Check for existing session or login
+    if auth.is_logged_in():
+        print("\n✓ Found existing session. Refreshing token...")
+        if not auth.refresh_token():
+            print("Session expired. Starting new login...")
+            if not auth.login():
                 print("❌ Login failed. Exiting.")
                 return
-        elif choice == '3':
-            return
-        # choice == '1' continues with local folder
     else:
-        print("\n⚠️  Could not locate local OneDrive folder.")
-        print("\nOptions:")
-        print("1. Enter OneDrive path manually")
-        print("2. Login to OneDrive online and download files")
+        print("\n🔐 No existing session found.")
+        print("\nHow would you like to backup?")
+        print("1. Login with Microsoft (recommended - backs up ALL files from cloud)")
+        print("2. Use local OneDrive folder (only backs up downloaded files)")
         print("3. Exit")
-        
+
         choice = input("\nEnter choice (1-3): ").strip()
-        
+
         if choice == '1':
-            manual_path = input("Enter your OneDrive path: ").strip()
-            backup.onedrive_path = Path(manual_path)
-            
-            if not backup.onedrive_path.exists():
-                print("❌ Invalid path. Trying online login...")
-                choice = '2'
-        
-        if choice == '2':
-            if not backup.login_to_onedrive_api():
+            if not auth.login():
                 print("❌ Login failed. Exiting.")
                 return
+        elif choice == '2':
+            # Fall through to local backup mode
+            backup = OneDriveBackup()
+            if not backup.onedrive_path:
+                manual_path = input("Enter your OneDrive path: ").strip()
+                backup.onedrive_path = Path(manual_path)
+                if not backup.onedrive_path.exists():
+                    print("❌ Invalid path. Exiting.")
+                    return
+            # Continue with local backup (use_api = False)
+            _run_backup_flow(backup)
+            return
         elif choice == '3':
             return
+        else:
+            print("Invalid choice. Exiting.")
+            return
+
+    # Create backup instance with auth client for token refresh
+    backup = OneDriveBackup(auth_client=auth)
+    backup.access_token = auth.access_token
+    backup.use_api = True
+
+    _run_backup_flow(backup)
+
+
+def _run_backup_flow(backup: OneDriveBackup):
+    """Run the backup flow (destination, file selection, download)"""
     
     # Get destination drive
     print("\nEnter the path to your external drive (e.g., E:, /media/backup, etc.):")
