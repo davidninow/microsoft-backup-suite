@@ -8,45 +8,56 @@
 Breaking free from Microsoft is hard. MSFT does everything they can to lock you in. This Backup Tool is for OneDrive users with a lot of data on OneDrive, who want an easy way to download/export all that data at once but don't have space on their local machine to do so.  
   
 This privacy-first Python script will automatically backup your entire OneDrive (for personal accounts) to an external hard drive of your choice, and preserve your exact OneDrive folder structure.
+
+## 🎉 What's New in v2.1
+
+### Zero-Setup Authentication! 🚀
+**No more Azure app registration required!** Just click "Login with Microsoft" and start backing up.
+
+- ✅ **One-click login** - No Azure portal, no client IDs, no secrets
+- ✅ **Works immediately** - Download, run, backup
+- ✅ **Secure** - Your files download directly from Microsoft (we never see them)
+
+### v2.0 Improvements
+- ✅ No more 200-file limit - Downloads ALL files  
+- ✅ Token auto-refresh - Zero HTTP 401 errors  
+- ✅ 40GB+ file support - Handles huge files  
+- ✅ Failed files report - See exactly what failed  
+- ✅ Interactive retry - Retry without exiting  
+- ✅ Desktop app - GUI interface  
    
-## What's New in v2.0
- ✅ No more 200-file limit - Downloads ALL files  
- ✅ Token auto-refresh - Zero HTTP 401 errors  
- ✅ 40GB+ file support - Handles huge files  
- ✅ Failed files report - See exactly what failed  
- ✅ Interactive retry - Retry without exiting  
- ✅ Desktop app - GUI interface  
-   
-   See full [CHANGELOG](https://github.com/davidninow/microsoft-backup-suite/blob/main/CHANGELOG.md) | [Detailed fixes](/docs)
+See full [CHANGELOG](https://github.com/davidninow/microsoft-backup-suite/blob/main/CHANGELOG.md) | [Detailed fixes](docs/)
 
 ## Features
 
+✅ **One-click Microsoft login** - No setup required (NEW in v2.1!)  
 ✅ **Automatic authentication** via Microsoft Graph API  
 ✅ **Preserves folder structure** exactly as in OneDrive  
 ✅ **Auto-refreshing tokens** - can run for days/weeks without re-authentication  
 ✅ **Real-time progress tracking**  
 ✅ **Handles large backups** (500GB+)  
-✅ **Supports documents and pictures** (configurable file types)  
+✅ **Supports all file types** (configurable)  
 ✅ **Resume capability** - automatically continues from where it left off if interrupted  
-🔒 This tool runs entirely on your local machine.  
-   - No credentials are stored or transmitted to any third party  
-   - No file content is uploaded to any server  
-   - All data stays between your computer, Microsoft's servers, and your external drive  
-   - Your Azure app credentials are only used for direct authentication with Microsoft  
+
+🔒 **Privacy-First Design:**
+- No credentials are stored or transmitted to any third party  
+- Your files download directly from Microsoft to your computer  
+- Our auth service only handles login tokens (never sees your files)  
+- All data stays between your computer, Microsoft's servers, and your external drive  
+- Open source - review the code yourself
 
 ## Requirements
 
 - Python 3.6+
 - External hard drive with sufficient space
 - Microsoft personal account with OneDrive
-- Azure app registration (free, one-time setup)
 
 ## Installation
 
 1. Clone this repository:
 ```bash
 git clone https://github.com/davidninow/microsoft-backup-suite.git
-cd microsoft-backup-suite
+cd microsoft-backup-suite/onedrive-backup
 ```
 
 2. Install required dependencies:
@@ -54,9 +65,116 @@ cd microsoft-backup-suite
 pip install requests
 ```
 
-## Azure Setup (One-Time)
+## Usage
 
-Before using the script, you need to create an Azure app registration:
+### Quick Start (30 Seconds!)
+
+Run the script:
+```bash
+python3 onedrive_backup_enhanced.py
+```
+
+Follow the prompts:
+1. Select **"1. Login with Microsoft"** (recommended)
+2. Browser opens → Sign in with your Microsoft account
+3. Return to terminal
+4. Enter your external drive path (e.g., `/Volumes/MyDrive` or `E:\`)
+5. Choose what to backup
+6. Done! ☕ Grab a coffee while it runs.
+
+### What Gets Backed Up
+
+By default, you can choose to backup:
+
+**Documents:**
+- PDF, Word (.docx, .doc), Excel (.xlsx, .xls)
+- PowerPoint (.pptx, .ppt), Text files (.txt)
+- CSV, RTF, ODT
+
+**Pictures:**
+- JPG, JPEG, PNG, GIF, BMP
+- TIFF, SVG, WebP, HEIC, RAW
+
+**Videos:**
+- MP4, MOV, AVI, MKV, WMV
+- And more...
+
+**Or choose "All Files"** to backup everything!
+
+## How It Works
+
+```
+Your Computer                    Auth Service                  Microsoft
+     │                                │                            │
+     │ 1. Click "Login"               │                            │
+     │───────────────────────────────>│                            │
+     │                                │ 2. Redirect to Microsoft   │
+     │                                │───────────────────────────>│
+     │                                │                            │
+     │                                │ 3. You sign in             │
+     │                                │<───────────────────────────│
+     │ 4. Receive tokens              │                            │
+     │<───────────────────────────────│                            │
+     │                                                             │
+     │ 5. Download files DIRECTLY from Microsoft                   │
+     │────────────────────────────────────────────────────────────>│
+```
+
+**Technical details:**
+1. **Authentication:** Uses OAuth 2.0 via our hosted auth service (or your own Azure app)
+2. **Token Management:** Automatically refreshes access tokens
+3. **API Calls:** Uses Microsoft Graph API to list and download files
+4. **Structure Preservation:** Recreates exact OneDrive folder hierarchy on external drive
+5. **Progress Tracking:** Shows real-time file counts, speeds, and ETAs
+
+## Output Structure
+
+Your backup will be organized exactly as in OneDrive:
+
+```
+/Volumes/YourDrive/OneDrive_Backup_20241203_051234/
+├── Work/
+│   ├── Projects/
+│   │   ├── Report.docx
+│   │   └── Data.xlsx
+│   └── Presentations/
+├── Personal/
+│   ├── Photos/
+│   │   ├── 2023/
+│   │   └── 2024/
+│   └── Documents/
+└── [your exact OneDrive structure]
+```
+
+## Troubleshooting
+
+### "Browser didn't open"
+Copy the URL from the terminal and paste it in your browser manually.
+
+### "Login failed"
+- Make sure you're using a personal Microsoft account (work/school support coming soon)
+- Try again - sometimes Microsoft auth is slow
+
+### "Token expired" error
+The script automatically refreshes tokens. If this fails, simply run the script again.
+
+### "Destination drive not found"
+Make sure your external drive is connected and mounted. Use the exact path shown in Finder/Explorer.
+
+### Script was interrupted  
+If the backup stops for any reason (power loss, crash, Ctrl+C), simply run the script again. It will automatically resume from where it left off. Progress is saved every 10 files.
+
+### Files failed to download
+After the backup completes, the script shows you exactly what failed and why. Most failures are temporary network issues - just press 'y' to retry immediately!
+
+## Advanced: Self-Hosted Authentication (Optional)
+
+If you prefer to use your own Azure app registration instead of our hosted service:
+
+<details>
+<summary>Click to expand Azure setup instructions</summary>
+
+### Step 1: Create App Registration
 
 ### Step 1: Create App Registration
 
@@ -115,101 +233,25 @@ Before using the script, you need to create an Azure app registration:
 
 You should see green checkmarks next to all permissions.
 
-## Usage
+### Using Your Own App
 
-### Basic Usage
+When running the script, choose option **2** (Use local OneDrive folder) and select **App Credentials** when prompted. Enter your Client ID and Secret.
 
-Run the script:
-```bash
-python3 onedrive_backup_enhanced.py
-```
-
-Follow the prompts:
-1. Choose option **2** (Login to OneDrive online)
-2. Choose option **1** (App Credentials)
-3. Enter your **Application (client) ID**
-4. Enter your **Client Secret**
-5. Enter `common` for Tenant ID
-6. Browser opens - sign in and approve permissions
-7. Copy the redirect URL from browser and paste into terminal
-8. Enter your external drive path (e.g., `/Volumes/MyDrive`)
-9. Choose what to backup (documents, pictures, or both)
-10. Let it run!
-
-### What Gets Backed Up
-
-By default, the script backs up:
-
-**Documents:**
-- PDF, Word (.docx, .doc), Excel (.xlsx, .xls)
-- PowerPoint (.pptx, .ppt), Text files (.txt)
-- CSV, RTF, ODT
-
-**Pictures:**
-- JPG, JPEG, PNG, GIF, BMP
-- TIFF, SVG, WebP, HEIC, RAW
-
-You can modify these file types in the script if needed.
-
-## How It Works
-
-1. **Authentication:** Uses OAuth 2.0 with delegated permissions
-2. **Token Management:** Automatically refreshes access tokens (valid for 90 days)
-3. **API Calls:** Uses Microsoft Graph API to list and download files
-4. **Structure Preservation:** Recreates exact OneDrive folder hierarchy on external drive
-5. **Progress Tracking:** Shows real-time file counts and paths
-
-## Output Structure
-
-Your backup will be organized exactly as in OneDrive:
-
-```
-/Volumes/YourDrive/OneDrive_Backup_20241203_051234/
-├── Work/
-│   ├── Projects/
-│   │   ├── Report.docx
-│   │   └── Data.xlsx
-│   └── Presentations/
-├── Personal/
-│   ├── Photos/
-│   │   ├── 2023/
-│   │   └── 2024/
-│   └── Documents/
-└── [your exact OneDrive structure]
-```
-
-## Troubleshooting
-
-### "Token expired" error
-The script automatically refreshes tokens. If this fails, you may need to re-authenticate (run the script again).
-
-### "Destination drive not found"
-Make sure your external drive is connected and mounted. Use the exact path shown in Finder.
-
-### "Invalid client secret"
-You copied the Secret ID instead of the Value. Go back to Azure and create a new client secret, then copy the **Value** column.
-
-### Browser doesn't open
-Make sure `webbrowser` module is available (it's built into Python). Try running in a different terminal.  
-
-### Script was interrupted  
-If the backup stops for any reason (power loss, crash, Ctrl+C), simply run the script again with the same settings. It will automatically resume from where it left off. Progress is saved every 10 files in a hidden `.progress.json` file in your backup folder.  
-  
-### Token keeps refreshing without downloading  
-This can happen during initial folder scanning if you have many folders. The script will eventually stabilize and begin downloading. If it refreshes more than 6 times in a row, stop the script (Ctrl+C) and restart it.  
+</details>
 
 ## Security Notes
 
-- Your Client Secret should be kept private (don't commit to public repos)
-- Access tokens expire after ~75 minutes
+- Our hosted auth service only handles login - it never sees your files
+- Access tokens expire after ~75 minutes and auto-refresh
 - Refresh tokens last 90 days and auto-renew when used
 - The script never stores your Microsoft password
 - All authentication uses official Microsoft OAuth flows
+- Files download directly from Microsoft to your computer
+- Open source - review the code at `auth_client.py` and `auth-service/`
 
 ## Limitations
 
-- Personal Microsoft accounts only (work/school accounts have different requirements)
-- Requires interactive login once per session
+- Personal Microsoft accounts only (work/school accounts coming soon)
 - Download speed depends on your internet connection
 - Large files may take time to download
 
@@ -220,6 +262,8 @@ Pull requests welcome! Please ensure:
 - Add tests for new features
 - Update documentation
 
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+
 ## License
 
 MIT License - feel free to use and modify as needed.
@@ -228,9 +272,10 @@ MIT License - feel free to use and modify as needed.
 
 Created to solve the challenge of backing up large OneDrive accounts without local storage space.
 
+Special thanks to everyone who tested v2.0 and reported bugs!
+
 ## Support
 
 For issues or questions:
 1. Check the Troubleshooting section above
-2. Review Microsoft Graph API documentation
-3. Open an issue on GitHub
+2. Open an issue on [GitHub](https://github.com/davidninow/microsoft-backup-suite/issues)
