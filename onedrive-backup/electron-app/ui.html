@@ -1,0 +1,1824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OneDrive Backup Manager</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Apple HIG Colors */
+            --system-blue: #007AFF;
+            --system-blue-hover: #0051D5;
+            --system-gray: #8E8E93;
+            --system-gray-light: #F2F2F7;
+            --system-gray-medium: #E5E5EA;
+            --system-red: #FF3B30;
+            --system-green: #34C759;
+            --system-orange: #FF9500;
+            
+            /* Background */
+            --bg-primary: #FFFFFF;
+            --bg-secondary: #F5F5F7;
+            --bg-tertiary: #FAFAFA;
+            
+            /* Text */
+            --text-primary: #1D1D1F;
+            --text-secondary: #86868B;
+            --text-tertiary: #A1A1A6;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.15);
+            
+            /* Border radius */
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        
+        /* Window Chrome */
+        .window {
+            max-width: 900px;
+            margin: 40px auto;
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            min-height: 600px;
+        }
+        
+        /* Title Bar */
+        .titlebar {
+            height: 52px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--system-gray-medium);
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            -webkit-app-region: drag;
+        }
+        
+        .traffic-lights {
+            display: flex;
+            gap: 8px;
+            margin-right: 16px;
+        }
+        
+        .traffic-light {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--system-gray-light);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .traffic-light.close { background: #FF5F57; }
+        .traffic-light.minimize { background: #FEBC2E; }
+        .traffic-light.maximize { background: #28C840; }
+        
+        .traffic-light:hover {
+            filter: brightness(1.1);
+            transform: scale(1.1);
+        }
+        
+        .window-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+        
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            gap: 12px;
+            padding: 20px 32px;
+            background: var(--bg-tertiary);
+            border-bottom: 1px solid var(--system-gray-medium);
+        }
+        
+        .tab-button {
+            padding: 8px 20px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: var(--radius-sm);
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .tab-button:hover {
+            background: rgba(0, 122, 255, 0.08);
+            color: var(--system-blue);
+        }
+        
+        .tab-button.active {
+            color: var(--system-blue);
+            background: rgba(0, 122, 255, 0.12);
+        }
+        
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--system-blue);
+        }
+        
+        /* Content Area */
+        .content {
+            padding: 32px;
+            min-height: 450px;
+        }
+        
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Typography */
+        h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 8px;
+        }
+        
+        h2 {
+            font-size: 22px;
+            font-weight: 600;
+            letter-spacing: -0.01em;
+            margin-bottom: 16px;
+        }
+        
+        h3 {
+            font-size: 17px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+        
+        p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+        
+        /* Cards */
+        .card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--system-gray-medium);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            border-color: var(--system-blue);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-2px);
+        }
+        
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 24px;
+        }
+        
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+        
+        input[type="text"],
+        input[type="password"],
+        select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--system-gray-medium);
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-family: inherit;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: all 0.2s ease;
+        }
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--system-blue);
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+        
+        /* Buttons */
+        .button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius-md);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: -0.01em;
+        }
+        
+        .button-primary {
+            background: var(--system-blue);
+            color: white;
+        }
+        
+        .button-primary:hover {
+            background: var(--system-blue-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .button-primary:active {
+            transform: translateY(0);
+        }
+        
+        .button-secondary {
+            background: var(--system-gray-light);
+            color: var(--text-primary);
+        }
+        
+        .button-secondary:hover {
+            background: var(--system-gray-medium);
+        }
+        
+        .button-large {
+            padding: 16px 32px;
+            font-size: 17px;
+        }
+        
+        /* Checkbox Group */
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--system-gray-medium);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .checkbox-item:hover {
+            background: var(--bg-primary);
+            border-color: var(--system-blue);
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: var(--system-blue);
+        }
+        
+        .checkbox-label {
+            flex: 1;
+        }
+        
+        .checkbox-label strong {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .checkbox-label span {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        /* Progress */
+        .progress-container {
+            margin-top: 32px;
+            display: none;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--system-gray-medium);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+        }
+        
+        .progress-container.active {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        
+        .progress-header h3 {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .button-icon {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .button-icon:hover {
+            background: var(--system-gray-light);
+            transform: scale(1.05);
+        }
+        
+        #details-icon {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+        
+        #details-icon.rotated {
+            transform: rotate(180deg);
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 12px;
+            background: var(--system-gray-light);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--system-blue), #00C7BE);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            width: 0%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+            );
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        .progress-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Current File Being Downloaded */
+        .current-file {
+            background: linear-gradient(135deg, rgba(0, 122, 255, 0.05), rgba(0, 199, 190, 0.05));
+            border: 2px solid var(--system-blue);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .current-file-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--system-blue);
+        }
+        
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--system-blue);
+            border-radius: 50%;
+            animation: pulse-animation 2s infinite;
+        }
+        
+        @keyframes pulse-animation {
+            0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 0.5;
+                transform: scale(1.2);
+            }
+        }
+        
+        .current-file-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        
+        .current-file-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--bg-primary);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+        }
+        
+        .file-icon-small {
+            font-size: 16px;
+        }
+        
+        .file-name-truncate {
+            flex: 1;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+        
+        .file-progress-mini {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--system-blue);
+            min-width: 40px;
+            text-align: right;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        /* Progress Details (Expandable) */
+        .progress-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease;
+        }
+        
+        .progress-details.expanded {
+            max-height: 600px;
+        }
+        
+        .details-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            border-bottom: 1px solid var(--system-gray-medium);
+        }
+        
+        .details-tab {
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s ease;
+            margin-bottom: -1px;
+        }
+        
+        .details-tab:hover {
+            color: var(--system-blue);
+        }
+        
+        .details-tab.active {
+            color: var(--system-blue);
+            border-bottom-color: var(--system-blue);
+        }
+        
+        .details-content {
+            display: none;
+        }
+        
+        .details-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .log-container {
+            background: var(--bg-primary);
+            border: 1px solid var(--system-gray-medium);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+        
+        .log-container::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        .log-container::-webkit-scrollbar-track {
+            background: var(--system-gray-light);
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb {
+            background: var(--system-gray);
+            border-radius: 4px;
+        }
+        
+        .log-container::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+        
+        .log-entry {
+            padding: 8px 12px;
+            margin-bottom: 4px;
+            border-radius: var(--radius-sm);
+            display: flex;
+            gap: 12px;
+            align-items: flex-start;
+            transition: background 0.2s ease;
+            animation: logSlideIn 0.3s ease;
+        }
+        
+        @keyframes logSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .log-entry:hover {
+            background: var(--system-gray-light);
+        }
+        
+        .log-time {
+            color: var(--text-tertiary);
+            font-size: 11px;
+            min-width: 60px;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .log-icon {
+            font-size: 14px;
+            min-width: 20px;
+        }
+        
+        .log-message {
+            flex: 1;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+        
+        .log-entry.success {
+            background: rgba(52, 199, 89, 0.05);
+        }
+        
+        .log-entry.success .log-icon {
+            color: var(--system-green);
+        }
+        
+        .log-entry.error {
+            background: rgba(255, 59, 48, 0.05);
+        }
+        
+        .log-entry.error .log-icon {
+            color: var(--system-red);
+        }
+        
+        .log-entry.warning {
+            background: rgba(255, 149, 0, 0.05);
+        }
+        
+        .log-entry.warning .log-icon {
+            color: var(--system-orange);
+        }
+        
+        .log-entry.info .log-icon {
+            color: var(--system-blue);
+        }
+        
+        .empty-state-mini {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-state-mini p {
+            margin: 8px 0 0 0;
+            color: var(--text-secondary);
+        }
+        
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+        
+        .stat-card {
+            background: linear-gradient(135deg, var(--system-blue) 0%, #00C7BE 100%);
+            padding: 24px;
+            border-radius: var(--radius-lg);
+            color: white;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            letter-spacing: -0.02em;
+        }
+        
+        .stat-label {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        /* Status Badge */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-badge.success {
+            background: rgba(52, 199, 89, 0.15);
+            color: var(--system-green);
+        }
+        
+        .status-badge.warning {
+            background: rgba(255, 149, 0, 0.15);
+            color: var(--system-orange);
+        }
+        
+        .status-badge.error {
+            background: rgba(255, 59, 48, 0.15);
+            color: var(--system-red);
+        }
+        
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        
+        /* File List */
+        .file-list {
+            margin-top: 24px;
+        }
+        
+        .file-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            margin-bottom: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .file-item:hover {
+            background: var(--bg-primary);
+            transform: translateX(4px);
+        }
+        
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--system-blue);
+            border-radius: var(--radius-sm);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            font-size: 20px;
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .file-meta {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 64px 32px;
+        }
+        
+        .empty-icon {
+            font-size: 64px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+        
+        .empty-state h3 {
+            font-size: 20px;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .empty-state p {
+            font-size: 15px;
+            color: var(--text-secondary);
+            margin-bottom: 24px;
+        }
+        
+        /* Settings Toggle */
+        .toggle-switch {
+            position: relative;
+            width: 51px;
+            height: 31px;
+            background: var(--system-gray-light);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .toggle-switch.active {
+            background: var(--system-green);
+        }
+        
+        .toggle-knob {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 27px;
+            height: 27px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .toggle-switch.active .toggle-knob {
+            transform: translateX(20px);
+        }
+        
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--system-gray-medium);
+        }
+        
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+        
+        .setting-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .setting-info p {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .window {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+            
+            .content {
+                padding: 24px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Animations */
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+        
+        .loading {
+            animation: pulse 2s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body>
+    <div class="window">
+        <!-- Title Bar -->
+        <div class="titlebar">
+            <div class="traffic-lights">
+                <div class="traffic-light close"></div>
+                <div class="traffic-light minimize"></div>
+                <div class="traffic-light maximize"></div>
+            </div>
+            <div class="window-title">OneDrive Backup Manager</div>
+        </div>
+        
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <button class="tab-button active" data-tab="backup">Backup</button>
+            <button class="tab-button" data-tab="history">History</button>
+            <button class="tab-button" data-tab="settings">Settings</button>
+        </div>
+        
+        <!-- Content -->
+        <div class="content">
+            <!-- Backup Section -->
+            <section class="section active" id="backup">
+                <h1>Create Backup</h1>
+                <p>Backup your OneDrive files to an external drive with verification and incremental sync.</p>
+                
+                <div class="card" id="auth-card">
+                    <h3>Authentication</h3>
+                    
+                    <!-- Primary: Login with Microsoft Button -->
+                    <div id="simple-auth-section">
+                        <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 14px;">
+                            Sign in with your Microsoft account to backup your OneDrive files. No setup required!
+                        </p>
+                        
+                        <!-- Login Button -->
+                        <button class="button button-primary button-large" id="ms-login-btn" style="width: 100%; justify-content: center; background: linear-gradient(135deg, #0078D4 0%, #00BCF2 100%);">
+                            <svg width="20" height="20" viewBox="0 0 21 21" fill="none" style="margin-right: 8px;">
+                                <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
+                                <rect x="11" y="1" width="9" height="9" fill="#7FBA00"/>
+                                <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
+                                <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
+                            </svg>
+                            Login with Microsoft
+                        </button>
+                        
+                        <!-- Login Status -->
+                        <div id="login-status" style="display: none; margin-top: 16px; padding: 16px; background: rgba(52, 199, 89, 0.1); border-radius: var(--radius-md); border: 1px solid rgba(52, 199, 89, 0.3);">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <span style="font-size: 24px;">✅</span>
+                                    <div>
+                                        <div style="font-weight: 600; color: var(--system-green);">Connected to OneDrive</div>
+                                        <div style="font-size: 13px; color: var(--text-secondary);">Ready to backup your files</div>
+                                    </div>
+                                </div>
+                                <button class="button button-secondary" id="logout-btn" style="padding: 8px 16px; font-size: 13px;">
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Waiting for browser -->
+                        <div id="login-waiting" style="display: none; margin-top: 16px; padding: 16px; background: rgba(0, 122, 255, 0.1); border-radius: var(--radius-md); text-align: center;">
+                            <div class="loading" style="font-size: 32px; margin-bottom: 8px;">🔐</div>
+                            <div style="font-weight: 500;">Waiting for Microsoft login...</div>
+                            <div style="font-size: 13px; color: var(--text-secondary); margin-top: 4px;">Complete sign-in in your browser</div>
+                        </div>
+                    </div>
+                    
+                    <!-- Divider -->
+                    <div style="margin: 24px 0; border-top: 1px solid var(--system-gray-medium); position: relative;">
+                        <span style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: var(--bg-tertiary); padding: 0 12px; font-size: 12px; color: var(--text-tertiary);">OR</span>
+                    </div>
+                    
+                    <!-- Advanced: Azure App Credentials (Collapsible) -->
+                    <details id="advanced-auth" style="margin-top: 8px;">
+                        <summary style="cursor: pointer; font-weight: 500; color: var(--text-secondary); font-size: 14px; padding: 8px 0;">
+                            ⚙️ Advanced: Use your own Azure app credentials
+                        </summary>
+                        
+                        <div style="margin-top: 16px; padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md);">
+                            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 16px;">
+                                For advanced users who want to use their own Azure app registration. 
+                                <a href="#" id="azure-help-link" style="color: var(--system-blue);">Setup instructions →</a>
+                            </p>
+                            
+                            <div class="form-group">
+                                <label>Login Method</label>
+                                <select id="auth-method">
+                                    <option value="app">App Credentials (Personal Account)</option>
+                                    <option value="device">Device Code (Work/School)</option>
+                                    <option value="local">Local OneDrive Folder</option>
+                                </select>
+                            </div>
+                            
+                            <div id="app-auth-fields">
+                                <div class="form-group">
+                                    <label>Application (Client) ID</label>
+                                    <input type="text" id="client-id" placeholder="Enter your client ID">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label>Client Secret</label>
+                                    <input type="password" id="client-secret" placeholder="Enter your client secret">
+                                </div>
+                            </div>
+                            
+                            <button class="button button-secondary" id="auth-btn">
+                                <span>🔐</span> Authenticate with Azure
+                            </button>
+                            <span class="status-badge success" id="auth-status" style="display: none; margin-left: 12px;">
+                                <span class="status-dot"></span> Connected
+                            </span>
+                        </div>
+                    </details>
+                </div>
+                
+                <div class="card">
+                    <h3>Destination</h3>
+                    <div class="form-group">
+                        <label>External Drive Path</label>
+                        <input type="text" id="destination" placeholder="e.g., /Volumes/MyDrive or E:\">
+                    </div>
+                    <button class="button button-secondary" id="browse-btn">
+                        <span>📁</span> Browse
+                    </button>
+                </div>
+                
+                <div class="card">
+                    <h3>File Types</h3>
+                    <div class="checkbox-group">
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="include-docs" checked>
+                            <div class="checkbox-label">
+                                <strong>Documents</strong>
+                                <span>PDF, Word, Excel, PowerPoint, Text files</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="include-pics" checked>
+                            <div class="checkbox-label">
+                                <strong>Pictures</strong>
+                                <span>JPG, PNG, HEIC, RAW, and other image formats</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="include-videos" checked>
+                            <div class="checkbox-label">
+                                <strong>Videos</strong>
+                                <span>MP4, MOV, AVI, MKV, and other video formats</span>
+                            </div>
+                        </label>
+                        
+                        <label class="checkbox-item">
+                            <input type="checkbox" id="include-all">
+                            <div class="checkbox-label">
+                                <strong>All Files</strong>
+                                <span>Backup everything including audio, web pages, etc.</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                
+                <button class="button button-primary button-large" id="start-backup-btn">
+                    <span>🚀</span> Start Backup
+                </button>
+                
+                <div class="progress-container" id="progress-container">
+                    <!-- Main Progress -->
+                    <div class="progress-header">
+                        <h3 id="progress-phase">Phase 1: Scanning OneDrive...</h3>
+                        <button class="button-icon" id="toggle-details" title="Show/Hide Details">
+                            <span id="details-icon">▼</span>
+                        </button>
+                    </div>
+                    
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill"></div>
+                    </div>
+                    
+                    <div class="progress-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Files:</span>
+                            <span class="stat-value" id="files-progress">0 / 0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Downloaded:</span>
+                            <span class="stat-value" id="size-progress">0 GB / 0 GB</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Speed:</span>
+                            <span class="stat-value" id="speed">0 MB/s</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">ETA:</span>
+                            <span class="stat-value" id="eta">Calculating...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Current File Being Downloaded -->
+                    <div class="current-file" id="current-file">
+                        <div class="current-file-header">
+                            <span class="pulse-dot"></span>
+                            <strong>Downloading:</strong>
+                        </div>
+                        <div class="current-file-list" id="current-file-list">
+                            <div class="current-file-item">
+                                <span class="file-icon-small">📥</span>
+                                <span class="file-name-truncate">movie_vacation_2024.mp4</span>
+                                <span class="file-progress-mini">45%</span>
+                            </div>
+                            <div class="current-file-item">
+                                <span class="file-icon-small">📥</span>
+                                <span class="file-name-truncate">photos_summer_album.zip</span>
+                                <span class="file-progress-mini">78%</span>
+                            </div>
+                            <div class="current-file-item">
+                                <span class="file-icon-small">📥</span>
+                                <span class="file-name-truncate">project_presentation.pptx</span>
+                                <span class="file-progress-mini">12%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Expandable Details Section -->
+                    <div class="progress-details" id="progress-details">
+                        <div class="details-tabs">
+                            <button class="details-tab active" data-detail="activity">Activity Log</button>
+                            <button class="details-tab" data-detail="errors">Errors & Retries</button>
+                            <button class="details-tab" data-detail="completed">Completed Files</button>
+                        </div>
+                        
+                        <!-- Activity Log -->
+                        <div class="details-content active" id="activity-log">
+                            <div class="log-container" id="log-messages">
+                                <!-- Real-time logs will appear here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Errors & Retries -->
+                        <div class="details-content" id="error-log">
+                            <div class="log-container" id="error-messages">
+                                <div class="empty-state-mini">
+                                    <span style="font-size: 48px;">✅</span>
+                                    <p>No errors yet - looking good!</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Completed Files -->
+                        <div class="details-content" id="completed-log">
+                            <div class="log-container" id="completed-messages">
+                                <!-- Completed files will appear here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- History Section -->
+            <section class="section" id="history">
+                <h1>Backup History</h1>
+                <p>View and manage your previous backups.</p>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">3</div>
+                        <div class="stat-label">Total Backups</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, var(--system-green) 0%, #30D158 100%);">
+                        <div class="stat-value">450 GB</div>
+                        <div class="stat-label">Total Size</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, var(--system-orange) 0%, #FFB340 100%);">
+                        <div class="stat-value">12,450</div>
+                        <div class="stat-label">Files Backed Up</div>
+                    </div>
+                </div>
+                
+                <div class="file-list">
+                    <h3>Recent Backups</h3>
+                    
+                    <div class="file-item">
+                        <div class="file-icon">💾</div>
+                        <div class="file-info">
+                            <div class="file-name">OneDrive_Backup_20241204_100530</div>
+                            <div class="file-meta">December 4, 2024 • 450 GB • 12,450 files</div>
+                        </div>
+                        <span class="status-badge success">
+                            <span class="status-dot"></span> Complete
+                        </span>
+                    </div>
+                    
+                    <div class="file-item">
+                        <div class="file-icon">💾</div>
+                        <div class="file-info">
+                            <div class="file-name">OneDrive_Backup_20241201_143022</div>
+                            <div class="file-meta">December 1, 2024 • 445 GB • 12,400 files</div>
+                        </div>
+                        <span class="status-badge success">
+                            <span class="status-dot"></span> Complete
+                        </span>
+                    </div>
+                    
+                    <div class="file-item">
+                        <div class="file-icon">💾</div>
+                        <div class="file-info">
+                            <div class="file-name">OneDrive_Backup_20241128_090015</div>
+                            <div class="file-meta">November 28, 2024 • 440 GB • 12,350 files</div>
+                        </div>
+                        <span class="status-badge success">
+                            <span class="status-dot"></span> Complete
+                        </span>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Settings Section -->
+            <section class="section" id="settings">
+                <h1>Settings</h1>
+                <p>Configure backup preferences and advanced options.</p>
+                
+                <div class="card">
+                    <h3>Backup Options</h3>
+                    
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <h4>Incremental Backup</h4>
+                            <p>Only download new or modified files on subsequent backups</p>
+                        </div>
+                        <div class="toggle-switch active">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <h4>Verify After Download</h4>
+                            <p>Check file integrity using SHA-256 hash verification</p>
+                        </div>
+                        <div class="toggle-switch active">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <h4>Multi-threaded Downloads</h4>
+                            <p>Download multiple files simultaneously for faster backups</p>
+                        </div>
+                        <div class="toggle-switch active">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <h4>Delete Corrupted Files</h4>
+                            <p>Automatically remove and re-download corrupted files</p>
+                        </div>
+                        <div class="toggle-switch active">
+                            <div class="toggle-knob"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Performance</h3>
+                    
+                    <div class="form-group">
+                        <label>Parallel Downloads</label>
+                        <select>
+                            <option value="1">1 thread (Slower, more stable)</option>
+                            <option value="3" selected>3 threads (Recommended)</option>
+                            <option value="5">5 threads (Faster, more bandwidth)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Large File Threshold</label>
+                        <select>
+                            <option value="50">50 MB</option>
+                            <option value="100" selected>100 MB (Recommended)</option>
+                            <option value="200">200 MB</option>
+                            <option value="500">500 MB</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>About</h3>
+                    <p style="margin-bottom: 8px;"><strong>OneDrive Backup Manager</strong></p>
+                    <p style="margin-bottom: 8px;">Version 2.0.0 Enhanced Edition</p>
+                    <p>
+                        Features: Multi-threaded downloads • Incremental sync • 
+                        File verification • Resume capability • Chunked downloads
+                    </p>
+                </div>
+            </section>
+        </div>
+    </div>
+    
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                // Remove active class from all tabs and sections
+                document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+                
+                // Add active class to clicked tab and corresponding section
+                button.classList.add('active');
+                const tabName = button.getAttribute('data-tab');
+                document.getElementById(tabName).classList.add('active');
+            });
+        });
+        
+        // Toggle switches
+        document.querySelectorAll('.toggle-switch').forEach(toggle => {
+            toggle.addEventListener('click', () => {
+                toggle.classList.toggle('active');
+            });
+        });
+        
+        // Auth method switching
+        document.getElementById('auth-method').addEventListener('change', (e) => {
+            const appFields = document.getElementById('app-auth-fields');
+            if (e.target.value === 'app') {
+                appFields.style.display = 'block';
+            } else {
+                appFields.style.display = 'none';
+            }
+        });
+        
+        // Authentication
+        document.getElementById('auth-btn').addEventListener('click', () => {
+            // Simulate authentication
+            const statusBadge = document.getElementById('auth-status');
+            statusBadge.style.display = 'inline-flex';
+            
+            // In real app, this would call the Python backend
+            console.log('Authentication initiated');
+        });
+        
+        // "All Files" checkbox behavior
+        document.getElementById('include-all').addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            ['include-docs', 'include-pics', 'include-videos'].forEach(id => {
+                const checkbox = document.getElementById(id);
+                checkbox.checked = !isChecked;
+                checkbox.disabled = isChecked;
+                checkbox.closest('.checkbox-item').style.opacity = isChecked ? '0.5' : '1';
+            });
+        });
+        
+        // Start backup
+        document.getElementById('start-backup-btn').addEventListener('click', () => {
+            const progressContainer = document.getElementById('progress-container');
+            const progressFill = document.getElementById('progress-fill');
+            const progressPhase = document.getElementById('progress-phase');
+            const filesProgress = document.getElementById('files-progress');
+            const sizeProgress = document.getElementById('size-progress');
+            const speedElem = document.getElementById('speed');
+            const etaElem = document.getElementById('eta');
+            
+            progressContainer.classList.add('active');
+            
+            // Initialize log
+            const activityLog = document.getElementById('log-messages');
+            const errorLog = document.getElementById('error-messages');
+            const completedLog = document.getElementById('completed-messages');
+            
+            function addLog(type, message, icon) {
+                const time = new Date().toLocaleTimeString();
+                const logEntry = document.createElement('div');
+                logEntry.className = `log-entry ${type}`;
+                logEntry.innerHTML = `
+                    <span class="log-time">${time}</span>
+                    <span class="log-icon">${icon}</span>
+                    <span class="log-message">${message}</span>
+                `;
+                
+                if (type === 'error' || type === 'warning') {
+                    errorLog.insertBefore(logEntry, errorLog.firstChild);
+                    // Remove empty state if it exists
+                    const emptyState = errorLog.querySelector('.empty-state-mini');
+                    if (emptyState) emptyState.remove();
+                } else if (type === 'success') {
+                    completedLog.insertBefore(logEntry, completedLog.firstChild);
+                } else {
+                    activityLog.insertBefore(logEntry, activityLog.firstChild);
+                }
+                
+                // Keep only last 100 entries per log
+                if (activityLog.children.length > 100) {
+                    activityLog.removeChild(activityLog.lastChild);
+                }
+            }
+            
+            // Simulate realistic backup progress
+            let phase = 1;
+            let progress = 0;
+            let filesDownloaded = 0;
+            let totalFiles = 10450;
+            let sizeDownloaded = 0;
+            let totalSize = 450; // GB
+            let currentSpeed = 0;
+            
+            addLog('info', 'Backup started', '🚀');
+            addLog('info', 'Authenticating with Microsoft Graph API...', '🔐');
+            
+            setTimeout(() => {
+                addLog('success', 'Successfully authenticated', '✓');
+                addLog('info', 'Phase 1: Scanning OneDrive folders...', '🔍');
+                progressPhase.textContent = 'Phase 1: Scanning OneDrive...';
+            }, 1000);
+            
+            setTimeout(() => {
+                addLog('info', `Found ${totalFiles.toLocaleString()} files (${totalSize} GB)`, '📊');
+                addLog('info', 'Phase 2: Checking available disk space...', '💾');
+                progressPhase.textContent = 'Phase 2: Checking Disk Space...';
+            }, 3000);
+            
+            setTimeout(() => {
+                addLog('success', 'Sufficient disk space available (520 GB free)', '✓');
+                addLog('info', 'Loaded metadata for 10,000 existing files', '📋');
+                addLog('info', 'Incremental backup: Skipping 9,950 unchanged files', '⚡');
+                totalFiles = 500; // Only need to download 500 new/changed files
+                addLog('info', 'Phase 3: Downloading 500 new/modified files...', '📥');
+                progressPhase.textContent = 'Phase 3: Downloading Files (Multi-threaded)...';
+            }, 5000);
+            
+            // Simulate file downloads
+            const fileNames = [
+                'vacation_video_4k.mp4',
+                'summer_photos_2024.zip',
+                'project_presentation.pptx',
+                'financial_report_q4.xlsx',
+                'family_memories.mov',
+                'wedding_album.zip',
+                'drone_footage_hd.mp4',
+                'conference_recording.mp4',
+                'design_mockups.psd',
+                'client_proposal.pdf',
+                'birthday_party_raw.mov',
+                'marketing_materials.zip',
+                'tax_documents_2024.pdf',
+                'research_paper.docx',
+                'product_photos.zip'
+            ];
+            
+            let currentFiles = [];
+            
+            const interval = setInterval(() => {
+                if (phase === 3 && progress < 100) {
+                    progress += Math.random() * 3;
+                    if (progress > 100) progress = 100;
+                    
+                    filesDownloaded = Math.floor((progress / 100) * totalFiles);
+                    sizeDownloaded = (progress / 100) * totalSize;
+                    currentSpeed = 12 + Math.random() * 8; // 12-20 MB/s
+                    
+                    const remaining = totalSize - sizeDownloaded;
+                    const eta = (remaining * 1024) / currentSpeed; // seconds
+                    
+                    progressFill.style.width = progress + '%';
+                    filesProgress.textContent = `${filesDownloaded.toLocaleString()} / ${totalFiles.toLocaleString()}`;
+                    sizeProgress.textContent = `${sizeDownloaded.toFixed(1)} GB / ${totalSize} GB`;
+                    speedElem.textContent = `${currentSpeed.toFixed(1)} MB/s`;
+                    
+                    if (eta > 3600) {
+                        etaElem.textContent = `${(eta / 3600).toFixed(1)}h`;
+                    } else if (eta > 60) {
+                        etaElem.textContent = `${(eta / 60).toFixed(0)}m`;
+                    } else {
+                        etaElem.textContent = `${eta.toFixed(0)}s`;
+                    }
+                    
+                    // Update current downloading files (3 threads)
+                    if (Math.random() > 0.7) {
+                        const randomFile = fileNames[Math.floor(Math.random() * fileNames.length)];
+                        const fileProgress = Math.floor(Math.random() * 100);
+                        
+                        // Add to activity log occasionally
+                        if (Math.random() > 0.9) {
+                            addLog('success', `Downloaded: ${randomFile}`, '✓');
+                        }
+                        
+                        // Simulate retries
+                        if (Math.random() > 0.97) {
+                            addLog('warning', `Timeout for ${randomFile}, retrying (1/3)...`, '⏱️');
+                        }
+                        
+                        // Simulate errors (rare)
+                        if (Math.random() > 0.99) {
+                            addLog('error', `Failed to download: corrupted_file.mp4 (will retry)`, '✗');
+                        }
+                        
+                        // Simulate hash verification
+                        if (Math.random() > 0.95) {
+                            addLog('info', `Verifying: ${randomFile} (SHA-256)`, '🔒');
+                        }
+                    }
+                    
+                    if (progress >= 100) {
+                        phase = 4;
+                        progressPhase.textContent = 'Backup Complete! ✅';
+                        addLog('success', `Backup completed successfully`, '🎉');
+                        addLog('success', `${totalFiles} files downloaded (${totalSize} GB)`, '📊');
+                        addLog('info', 'All files verified - no corruption detected', '✓');
+                        clearInterval(interval);
+                    }
+                }
+            }, 500);
+            
+            // Start at phase 3 (downloading)
+            setTimeout(() => {
+                phase = 3;
+            }, 6000);
+        });
+        
+        // Toggle details expansion
+        document.getElementById('toggle-details').addEventListener('click', () => {
+            const details = document.getElementById('progress-details');
+            const icon = document.getElementById('details-icon');
+            
+            details.classList.toggle('expanded');
+            icon.classList.toggle('rotated');
+        });
+        
+        // Details tabs
+        document.querySelectorAll('.details-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                // Remove active from all tabs and contents
+                document.querySelectorAll('.details-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.details-content').forEach(c => c.classList.remove('active'));
+                
+                // Add active to clicked tab and corresponding content
+                tab.classList.add('active');
+                const detailType = tab.getAttribute('data-detail');
+                
+                if (detailType === 'activity') {
+                    document.getElementById('activity-log').classList.add('active');
+                } else if (detailType === 'errors') {
+                    document.getElementById('error-log').classList.add('active');
+                } else if (detailType === 'completed') {
+                    document.getElementById('completed-log').classList.add('active');
+                }
+            });
+        });
+        
+        // Browse button
+        document.getElementById('browse-btn').addEventListener('click', () => {
+            // In real app, this would open a file dialog
+            alert('In the full application, this would open a native file picker dialog.');
+        });
+        
+        // Traffic lights (window controls)
+        document.querySelector('.traffic-light.close').addEventListener('click', () => {
+            if (confirm('Close OneDrive Backup Manager?')) {
+                // In real app, would close the Electron window
+                console.log('Close window');
+            }
+        });
+        
+        document.querySelector('.traffic-light.minimize').addEventListener('click', () => {
+            // In real app, would minimize the Electron window
+            console.log('Minimize window');
+        });
+        
+        document.querySelector('.traffic-light.maximize').addEventListener('click', () => {
+            // In real app, would maximize/restore the Electron window
+            console.log('Maximize/restore window');
+        });
+        
+        // Listen for real progress updates from Python (only works in Electron app)
+        if (window.electronAPI && window.electronAPI.onProgress) {
+            window.electronAPI.onProgress((progressData) => {
+                console.log('Progress update:', progressData);
+                
+                // Handle log messages
+                if (progressData.progressType === 'log' || progressData.data?.type) {
+                    const logData = progressData.data;
+                    const activityLog = document.getElementById('log-messages');
+                    const errorLog = document.getElementById('error-messages');
+                    const completedLog = document.getElementById('completed-messages');
+                    
+                    const time = new Date().toLocaleTimeString();
+                    const logEntry = document.createElement('div');
+                    logEntry.className = `log-entry ${logData.type}`;
+                    logEntry.innerHTML = `
+                        <span class="log-time">${time}</span>
+                        <span class="log-icon">${logData.icon}</span>
+                        <span class="log-message">${logData.message}</span>
+                    `;
+                    
+                    // Route to appropriate log
+                    if (logData.type === 'error' || logData.type === 'warning') {
+                        errorLog.insertBefore(logEntry, errorLog.firstChild);
+                        const emptyState = errorLog.querySelector('.empty-state-mini');
+                        if (emptyState) emptyState.remove();
+                    } else if (logData.type === 'success') {
+                        completedLog.insertBefore(logEntry, completedLog.firstChild);
+                    } else {
+                        activityLog.insertBefore(logEntry, activityLog.firstChild);
+                    }
+                    
+                    // Keep only last 100 entries
+                    [activityLog, errorLog, completedLog].forEach(log => {
+                        while (log.children.length > 100) {
+                            log.removeChild(log.lastChild);
+                        }
+                    });
+                }
+                
+                // Handle phase updates
+                if (progressData.progressType === 'phase') {
+                    const progressPhase = document.getElementById('progress-phase');
+                    if (progressPhase) {
+                        progressPhase.textContent = progressData.data.message;
+                    }
+                }
+                
+                // Handle completion
+                if (progressData.progressType === 'complete') {
+                    const progressPhase = document.getElementById('progress-phase');
+                    if (progressPhase) {
+                        progressPhase.textContent = 'Backup Complete! ✅';
+                    }
+                    document.getElementById('progress-fill').style.width = '100%';
+                }
+            });
+        }
+        
+        // ===== NEW: SimpleAuth (Microsoft Login) Handlers =====
+        
+        // State tracking
+        let isLoggedIn = false;
+        let authMethod = 'simple'; // 'simple' for hosted auth, 'azure' for legacy
+        
+        // Check login status on page load
+        async function checkLoginStatus() {
+            if (window.electronAPI && window.electronAPI.checkSimpleAuth) {
+                try {
+                    const status = await window.electronAPI.checkSimpleAuth();
+                    console.log('SimpleAuth status:', status);
+                    
+                    if (status.available && status.loggedIn) {
+                        showLoggedInState();
+                        isLoggedIn = true;
+                    }
+                } catch (error) {
+                    console.error('Failed to check auth status:', error);
+                }
+            }
+        }
+        
+        // Show logged in state
+        function showLoggedInState() {
+            document.getElementById('ms-login-btn').style.display = 'none';
+            document.getElementById('login-status').style.display = 'block';
+            document.getElementById('login-waiting').style.display = 'none';
+            isLoggedIn = true;
+        }
+        
+        // Show logged out state
+        function showLoggedOutState() {
+            document.getElementById('ms-login-btn').style.display = 'flex';
+            document.getElementById('login-status').style.display = 'none';
+            document.getElementById('login-waiting').style.display = 'none';
+            isLoggedIn = false;
+        }
+        
+        // Show waiting state
+        function showWaitingState() {
+            document.getElementById('ms-login-btn').style.display = 'none';
+            document.getElementById('login-status').style.display = 'none';
+            document.getElementById('login-waiting').style.display = 'block';
+        }
+        
+        // Microsoft Login button click
+        document.getElementById('ms-login-btn').addEventListener('click', async () => {
+            if (window.electronAPI && window.electronAPI.simpleAuthLogin) {
+                showWaitingState();
+                
+                try {
+                    const result = await window.electronAPI.simpleAuthLogin();
+                    console.log('Login result:', result);
+                    
+                    if (result.success) {
+                        showLoggedInState();
+                        authMethod = 'simple';
+                        addLog('success', 'Successfully logged in with Microsoft!', '✓');
+                    } else {
+                        showLoggedOutState();
+                        addLog('error', result.message || 'Login failed', '✗');
+                    }
+                } catch (error) {
+                    showLoggedOutState();
+                    console.error('Login error:', error);
+                    addLog('error', 'Login failed: ' + error.message, '✗');
+                }
+            } else {
+                alert('This feature requires the desktop app. Please download the OneDrive Backup Manager app.');
+            }
+        });
+        
+        // Logout button click
+        document.getElementById('logout-btn').addEventListener('click', async () => {
+            if (window.electronAPI && window.electronAPI.simpleAuthLogout) {
+                try {
+                    await window.electronAPI.simpleAuthLogout();
+                    showLoggedOutState();
+                    addLog('info', 'Logged out successfully', 'ℹ️');
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            }
+        });
+        
+        // Azure help link
+        document.getElementById('azure-help-link')?.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (window.electronAPI && window.electronAPI.openExternal) {
+                window.electronAPI.openExternal('https://github.com/yourusername/onedrive-backup#azure-setup');
+            } else {
+                window.open('https://github.com/yourusername/onedrive-backup#azure-setup', '_blank');
+            }
+        });
+        
+        // Update start backup to check auth
+        const originalStartBackupHandler = document.getElementById('start-backup-btn').onclick;
+        document.getElementById('start-backup-btn').addEventListener('click', async (e) => {
+            // Check if authenticated
+            const destination = document.getElementById('destination').value;
+            
+            if (!destination) {
+                alert('Please select a backup destination first.');
+                return;
+            }
+            
+            if (!isLoggedIn && !document.getElementById('auth-status').style.display.includes('inline')) {
+                alert('Please login with Microsoft or authenticate with Azure credentials first.');
+                return;
+            }
+            
+            // Continue with backup...
+            const progressContainer = document.getElementById('progress-container');
+            progressContainer.classList.add('active');
+            
+            if (window.electronAPI && window.electronAPI.startBackup) {
+                const config = {
+                    destination: destination,
+                    includeDocs: document.getElementById('include-docs').checked,
+                    includePics: document.getElementById('include-pics').checked,
+                    includeVideos: document.getElementById('include-videos').checked,
+                    includeAll: document.getElementById('include-all').checked
+                };
+                
+                try {
+                    addLog('info', 'Starting backup...', '🚀');
+                    const result = await window.electronAPI.startBackup(config);
+                    console.log('Backup result:', result);
+                } catch (error) {
+                    console.error('Backup error:', error);
+                    addLog('error', 'Backup failed: ' + error.message, '✗');
+                }
+            }
+        });
+        
+        // Check login status on page load
+        checkLoginStatus();
+    </script>
+</body>
+</html>
