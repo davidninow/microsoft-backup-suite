@@ -49,7 +49,7 @@ See full [CHANGELOG](https://github.com/davidninow/microsoft-backup-suite/blob/m
 ## Requirements
 
 - Python 3.6+
-- External hard drive with sufficient space
+- Internal or External hard drive with sufficient space
 - Microsoft personal account with OneDrive
 
 ## Installation
