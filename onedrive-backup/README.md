@@ -176,8 +176,6 @@ If you prefer to use your own Azure app registration instead of our hosted servi
 
 ### Step 1: Create App Registration
 
-### Step 1: Create App Registration
-
 1. Go to [Microsoft Entra Admin Center](https://entra.microsoft.com/)
 2. Sign in with your personal Microsoft account
    * If you get errors at this point, fret not! If no errors, skip to step 3.
