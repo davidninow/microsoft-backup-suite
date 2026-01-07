@@ -5,6 +5,81 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0](https://github.com/davidninow/microsoft-backup-suite/releases/tag/v2.1.0) - 2026-01-06
+
+### 🎉 Zero-Setup Authentication
+
+**No more Azure app registration required!** Users can now backup their OneDrive with zero configuration.
+
+### Added
+
+#### Hosted Authentication Service
+- **One-click Microsoft login** - No Azure portal setup required
+- **Cloudflare Workers backend** - Fast, secure, globally distributed
+- **Automatic token handling** - Refresh tokens managed securely
+- **Privacy-first design** - Only handles auth tokens, never sees your files
+
+#### New Login Option
+```
+Choose login method:
+1. App Credentials (Personal Account)
+2. Device Code (Work/School Only)
+3. Login with Microsoft (Recommended)  ← NEW!
+```
+
+### What Changed
+
+**Before v2.1 (15-20 minutes setup):**
+1. Go to Azure portal
+2. Create app registration
+3. Configure redirect URIs
+4. Set API permissions
+5. Create client secret
+6. Copy IDs to script
+7. Finally run backup
+
+**After v2.1 (30 seconds):**
+1. Run script
+2. Click "Login with Microsoft"
+3. Sign in
+4. Done!
+
+### Technical Details
+
+- **Auth Service URL**: `https://onedrive-auth-service.dj-ninow.workers.dev`
+- **Hosting**: Cloudflare Workers (free tier)
+- **Encryption**: AES-256-GCM for token storage
+- **Token Expiry**: Access tokens ~75 min, refresh tokens ~90 days
+- **Privacy**: Files download directly from Microsoft to your computer
+
+### Security Notes
+
+- ✅ Open source auth service - review the code in `auth-service/`
+- ✅ Tokens encrypted at rest with unique encryption key
+- ✅ No file data ever passes through auth service
+- ✅ Standard OAuth 2.0 authorization code flow
+- ✅ Works with personal Microsoft accounts (work/school coming soon)
+
+### New Files
+
+- `auth-service/` - Cloudflare Workers auth service
+  - `src/index.ts` - Main service code
+  - `wrangler.toml` - Cloudflare configuration
+  - `package.json` - Dependencies
+- `auth_client.py` - Client-side authentication helper
+
+### For Self-Hosters
+
+If you prefer to run your own auth service:
+1. Clone the `auth-service/` directory
+2. Create a Cloudflare account (free)
+3. Run `npx wrangler deploy`
+4. Update `AUTH_SERVICE_URL` in `auth_client.py`
+
+See `auth-service/README.md` for detailed instructions.
+
+---
+
 ## [2.0.0](https://github.com/davidninow/microsoft-backup-suite/releases/tag/v2.0.0) - 2025-12-09
 
 ### 🎉 Major Release - Complete Overhaul
