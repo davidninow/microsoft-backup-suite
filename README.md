@@ -12,7 +12,6 @@ New in v2.0:
 - ✅ **40GB+ file support** - Handles huge files with adaptive chunking
 - ✅ **Failed files report** - See exactly what failed and why
 - ✅ **Interactive retry** - Retry without exiting
-- ✅ **Desktop app** - Beautiful Electron GUI
 
 See full [CHANGELOG](https://github.com/davidninow/microsoft-backup-suite/blob/main/CHANGELOG.md) | [Detailed fixes](/docs)
 
@@ -33,7 +32,6 @@ Automatically backup your entire OneDrive (personal accounts) to an external dri
 - ✅ Interactive retry - Retry failed files without exiting
 - ✅ Multi-threaded downloads - 3x faster
 - ✅ Resume capability - Stop/start anytime
-- ✅ Desktop app - GUI interface available
 
 ### 📓 OneNote Exporter (WIP)
 Export your entire OneNote notebooks with all attachments (images, audio recordings, PDFs, web links) for importing into popular note-taking apps.
@@ -47,21 +45,6 @@ Export your entire OneNote notebooks with all attachments (images, audio recordi
 - ✅ Preserves metadata (dates, authors)
 
 ---
-
-## 📥 Download
-
-### OneDrive Backup - Desktop App (Recommended)
-
-**No Python or command line required!**
-
-| Platform | Download | Size |
-|----------|----------|------|
-| **macOS (Apple Silicon)** | [OneDrive-Backup-2.0.0-arm64.dmg](https://github.com/davidninow/microsoft-backup-suite/releases/download/v2.0.0/OneDrive.Backup.Manager-2.0.0-arm64.dmg) | 100 MB 
-| **macOS (Intel)** | [OneDrive-Backup-2.0.0.dmg](https://github.com/davidninow/microsoft-backup-suite/releases/download/v2.0.0/OneDrive.Backup.Manager-2.0.0.dmg) | 96 MB |
-| **Windows** | [OneDrive-Backup-Setup-2.0.0.exe](https://github.com/davidninow/microsoft-backup-suite/releases/download/v2.0.0/OneDrive.Backup.Manager.Setup.2.0.0.exe) | 80 MB |
-| **Linux** | [OneDrive.Backup.Manager-2.0.0.AppImage](https://github.com/davidninow/microsoft-backup-suite/releases/download/v2.0.0/OneDrive.Backup.Manager-2.0.0.AppImage) | 70 MB |
-
-*Download links will be added in the v2.0.0 release*
 
 ### Python Scripts (Both Tools)
 
@@ -120,7 +103,6 @@ microsoft-backup-suite/
 │   ├── README.md               # Complete v2.0 documentation
 │   ├── CHANGELOG.md            # v2.0 changes and fixes
 │   ├── onedrive_backup_enhanced.py  # Main script (v2.0)
-│   ├── electron-app/           # Desktop application
 │   ├── docs/                   # Detailed fix guides
 │   └── requirements.txt        # Dependencies
 │
