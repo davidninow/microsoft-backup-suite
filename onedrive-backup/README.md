@@ -23,7 +23,6 @@ This privacy-first Python script will automatically backup your entire OneDrive 
 - ✅ 40GB+ file support - Handles huge files  
 - ✅ Failed files report - See exactly what failed  
 - ✅ Interactive retry - Retry without exiting  
-- ✅ Desktop app - GUI interface  
    
 See full [CHANGELOG](https://github.com/davidninow/microsoft-backup-suite/blob/main/CHANGELOG.md)
 
