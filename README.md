@@ -63,12 +63,7 @@ pip install requests
 
 ### OneDrive Backup (v2.0)
 
-**Option 1: Desktop App**
-1. Download installer above
-2. Double-click to install
-3. Open app and follow wizard
-
-**Option 2: Python Script**
+**Python Script**
 ```bash
 cd onedrive-backup
 python3 onedrive_backup_enhanced.py
@@ -320,7 +315,6 @@ pip3 install requests
 - **docs/HUGE_FILE_FIX.md** - 40GB+ file support
 - **docs/FAILED_FILES_WITH_PATHS.md** - Failure reporting
 - **docs/INTERACTIVE_RETRY_FEATURE.md** - Retry feature
-- **docs/ELECTRON_DISTRIBUTION_GUIDE.md** - Building desktop app
 
 ### OneNote Exporter
 - **README.md** - Main overview and getting started
@@ -463,7 +457,7 @@ cd ../onenote-exporter && python3 onenote_exporter.py
 
 **OneDrive Backup Tool v2.0** represents a complete overhaul with:
 - **7 critical bug fixes** (pagination, token expiration, huge files, race conditions, metadata corruption, misleading messages, flow issues)
-- **3 new features** (failed files report, interactive retry, desktop app)
+- **2 new features** (failed files report, interactive retry)
 - **42,000% improvement in success rate** (0.3% → 99.978%)
 - **39% more files discovered** (32,857 → 45,796 files found)
 
