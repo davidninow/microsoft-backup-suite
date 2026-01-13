@@ -1,0 +1,358 @@
+# OneNote to Evernote/Joplin Exporter (Work In Progress)
+
+A Python tool to export your entire OneNote notebooks with all attachments (images, audio recordings, PDFs, web links, etc.) for importing into popular note-taking apps like Evernote and Joplin.
+
+## ✨ Features
+
+- **Complete Export**: Exports all notebooks, sections, and pages from OneNote
+- **Preserves Attachments**: Downloads all embedded files:
+  - 🖼️ Images (PNG, JPG, etc.)
+  - 🎵 Audio recordings (M4A, WAV, etc.)
+  - 📄 PDF documents
+  - 🔗 Web embeds and links
+- **Multiple Formats**: Exports to:
+  - Markdown (for Joplin)
+  - ENEX (for Evernote)
+  - HTML (universal format)
+- **Preserves Structure**: Maintains your notebook → section → page hierarchy
+- **Metadata Preservation**: Keeps creation dates, modification dates, and authors
+- **Resume Support**: Can handle large exports with token refresh
+
+## 📋 Requirements
+
+- Python 3.6+
+- Microsoft personal account with OneNote
+- Azure app registration (free, one-time setup)
+- Storage space for exported notebooks
+
+## 🔧 Installation
+
+1. **Clone or download this repository**
+
+2. **Install required Python packages:**
+```bash
+pip install requests
+```
+
+That's it! The script uses only built-in Python libraries plus `requests`.
+
+## 🚀 Azure Setup (One-Time)
+
+Before using the tool, you need to create an Azure app registration. This gives the script permission to read your OneNote notebooks.
+
+### Step 1: Create App Registration
+
+1. Go to [Microsoft Entra Admin Center](https://entra.microsoft.com/)
+2. Sign in with your personal Microsoft account
+3. Navigate to **Identity** → **Applications** → **App registrations**
+4. Click **+ New registration**
+5. Fill out the form:
+   - **Name:** `OneNote Exporter`
+   - **Supported account types:** "Accounts in any organizational directory and personal Microsoft accounts"
+   - **Redirect URI:** Platform: `Web`, URI: `http://localhost:8080`
+6. Click **Register**
+
+### Step 2: Get Application (Client) ID
+
+1. On the app's **Overview** page, copy the **Application (client) ID**
+2. Save this - you'll need it when running the script
+
+### Step 3: Create Client Secret
+
+1. Go to **Certificates & secrets** (left sidebar)
+2. Click **+ New client secret**
+3. Description: `OneNote Exporter Secret`
+4. Expiration: Choose `24 months` (maximum)
+5. Click **Add**
+6. **IMMEDIATELY copy the Value** (you can only see it once!)
+7. Save this with your Client ID
+
+### Step 4: Set API Permissions
+
+1. Go to **API permissions** (left sidebar)
+2. Click **+ Add a permission**
+3. Select **Microsoft Graph**
+4. Select **Delegated permissions**
+5. Search for and add these permissions:
+   - `Notes.Read`
+   - `Notes.Read.All`
+   - `offline_access`
+6. Click **Add permissions**
+7. Click **Grant admin consent for [Your Account]** and confirm
+
+You should see green checkmarks next to all permissions.
+
+## 📖 Usage
+
+### Basic Usage
+
+1. **Run the script:**
+```bash
+python3 onenote_exporter.py
+```
+
+2. **Follow the prompts:**
+   - Enter your **Application (client) ID**
+   - Enter your **Client Secret**
+   - Enter `common` for Tenant ID (for personal accounts)
+   - Browser opens → sign in and approve permissions
+   - Copy the redirect URL from browser and paste into terminal
+   - Enter destination path (e.g., `/Users/yourname/Desktop`)
+   - Choose export format
+
+3. **Wait for completion:**
+   - The script will export all notebooks
+   - Progress is shown in real-time
+   - Large notebooks may take several minutes
+
+### Export Format Options
+
+When running the script, you can choose:
+
+1. **Both formats** (default) - Creates Markdown and ENEX files
+2. **Joplin only** - Only Markdown files
+3. **Evernote only** - Only ENEX files
+4. **HTML only** - Raw HTML files (no conversion)
+
+## 📁 Output Structure
+
+Your export will be organized as follows:
+
+```
+OneNote_Export_20241203_143052/
+├── README.md                          # Import instructions
+├── export_summary.json                # Export statistics
+│
+├── Personal Notebook/
+│   ├── Quick Notes/
+│   │   ├── meeting_notes.html         # Raw HTML
+│   │   ├── meeting_notes_attachments/ # All attachments
+│   │   │   ├── image_1.png
+│   │   │   ├── audio_1.m4a
+│   │   │   └── document.pdf
+│   │   └── ...
+│   │
+│   ├── joplin/                        # Markdown files for Joplin
+│   │   ├── meeting_notes.md
+│   │   └── ...
+│   │
+│   └── evernote/                      # ENEX files for Evernote
+│       ├── meeting_notes.enex
+│       └── ...
+│
+├── Work Notebook/
+│   └── ... (same structure)
+│
+└── ... (all your notebooks)
+```
+
+## 📥 Importing to Note-Taking Apps
+
+### Joplin
+
+1. Open Joplin desktop application
+2. Go to **File** → **Import** → **MD - Markdown (Directory)**
+3. Select the `joplin` folder from any exported notebook
+4. Joplin will import all markdown files
+
+**For attachments:**
+- Copy the `*_attachments` folders to your Joplin resources directory:
+  - **Mac/Linux:** `~/.config/joplin-desktop/resources/`
+  - **Windows:** `%USERPROFILE%\.config\joplin-desktop\resources\`
+- Or use Joplin's **File** → **Import** → **MD - Markdown + Attachments**
+
+### Evernote
+
+1. Open Evernote desktop application
+2. Go to **File** → **Import Notes** → **Import Evernote Export File (.enex)**
+3. Select ENEX files from the `evernote` folder
+4. Choose the notebook to import into
+5. Click **Import**
+
+**Notes:**
+- Import one ENEX file at a time for better organization
+- Evernote has attachment size limits (25MB per note for free accounts)
+- Some formatting may need adjustment
+
+### Notion
+
+1. In Notion, create a new page
+2. Click **Import** → **HTML**
+3. Select HTML files from the exported notebooks
+4. Manually drag attachments from `*_attachments` folders into the imported pages
+
+### Other Apps
+
+Most note-taking apps support:
+- **HTML import** - Use the raw HTML files
+- **Markdown import** - Use the Joplin markdown files
+- **Manual copy-paste** - Open HTML files in a browser and copy content
+
+## 🎯 What Gets Exported
+
+### Supported Content Types
+
+✅ **Text and Formatting**
+- Headers, paragraphs, lists
+- Bold, italic, underline
+- Links and tables
+
+✅ **Images**
+- Embedded images
+- Pasted screenshots
+- Drawn sketches
+
+✅ **Audio**
+- Voice recordings
+- Audio notes
+- Embedded audio files
+
+✅ **Files**
+- PDF documents
+- Office documents (links)
+- Other embedded files
+
+✅ **Metadata**
+- Page creation date
+- Last modified date
+- Author information
+
+### Known Limitations
+
+⚠️ **Not Supported:**
+- OneNote-specific features (tags, to-do checkboxes)
+- Ink/pen drawings (exported as images)
+- Equation objects (may export as images)
+- Some embedded objects (Office docs may be links only)
+- Page backgrounds and themes
+
+⚠️ **Partial Support:**
+- Complex tables (may need reformatting)
+- Some advanced formatting (may be simplified)
+- Large video files (size limits apply)
+
+## 🔍 Troubleshooting
+
+### Authentication Issues
+
+**"Invalid client secret"**
+- You copied the Secret ID instead of the Value
+- Create a new client secret in Azure
+- Make sure to copy the **Value** column
+
+**"Browser doesn't open"**
+- Try a different browser as your default
+- Manually copy the authentication URL from terminal
+- Make sure port 8080 is not blocked
+
+**"Token expired"**
+- The script automatically refreshes tokens
+- If it fails, run the script again
+- You may need to re-authenticate
+
+### Export Issues
+
+**"No notebooks found"**
+- Make sure you have OneNote notebooks in your account
+- Check API permissions are granted in Azure
+- Try signing out and back into OneNote
+
+**"Download failed" errors**
+- Some attachments may be too large
+- Network timeouts can cause failures
+- The script continues exporting other content
+
+**"Out of memory" errors**
+- Export notebooks one at a time
+- Close other applications
+- Consider using a machine with more RAM
+
+### Import Issues
+
+**Joplin: "Import failed"**
+- Make sure you're importing the correct format (Markdown)
+- Check that markdown files are valid UTF-8
+- Import one notebook at a time
+
+**Evernote: "File size limit"**
+- Split large notebooks into smaller chunks
+- Remove large attachments before importing
+- Consider upgrading Evernote plan
+
+## 🛡️ Security & Privacy
+
+- **Your credentials are never stored** - only used during authentication
+- **Access tokens are temporary** - expire after ~75 minutes
+- **Refresh tokens last 90 days** - auto-renewed when used
+- **All data is stored locally** - nothing sent to third parties
+- **OAuth 2.0 standard** - industry-standard secure authentication
+
+### Best Practices
+
+- Keep your Client Secret private
+- Don't commit credentials to version control
+- Delete exported files after importing
+- Revoke app permissions in Azure when done (optional)
+
+## 🤝 Contributing
+
+Contributions welcome! Please:
+- Follow the existing code style
+- Test with real OneNote notebooks
+- Update documentation for new features
+- Submit pull requests to the main branch
+
+## 📝 License
+
+MIT License - see LICENSE file for details
+
+## 🐛 Known Issues
+
+1. **Large exports may be slow** - Graph API has rate limits
+2. **Some formatting lost** - Conversion from HTML to Markdown is imperfect
+3. **Embedded Office docs** - May export as links, not files
+4. **OneNote equations** - Export as images, not editable equations
+5. **Handwriting** - Exported as images, not searchable text
+
+## 🗺️ Roadmap
+
+Future improvements:
+- [ ] Selective export (specific notebooks/sections)
+- [ ] Incremental export (only new/modified pages)
+- [ ] Better Markdown conversion (using html2text)
+- [ ] Direct import to Joplin/Evernote APIs
+- [ ] GUI interface for easier use
+- [ ] Progress bar with ETA
+- [ ] Parallel downloads for speed
+- [ ] OCR for handwritten notes
+
+## 💡 Tips
+
+1. **Start small** - Test with a small notebook first
+2. **Check permissions** - Make sure Azure app has correct permissions
+3. **Stable internet** - Large exports need reliable connection
+4. **Review exports** - Check a few pages before deleting OneNote
+5. **Backup originals** - Keep OneNote notebooks until verified
+6. **Import gradually** - Don't import everything at once
+
+## 📞 Support
+
+For issues:
+1. Check the Troubleshooting section above
+2. Review Azure permissions settings
+3. Check Microsoft Graph API status
+4. Open an issue on GitHub with:
+   - Error messages
+   - Export summary
+   - Python version
+   - OS information
+
+## 🙏 Acknowledgments
+
+- Microsoft Graph API documentation
+- OneNote export format research
+- Community feedback and testing
+
+---
+
+**Made with ❤️ for OneNote users transitioning to open platforms**
